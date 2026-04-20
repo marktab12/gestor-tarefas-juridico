@@ -42,7 +42,12 @@ db.exec(`
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve arquivos estáticos da pasta public/ se existir, senão da raiz
+const publicDir = fs.existsSync(path.join(__dirname, 'public'))
+  ? path.join(__dirname, 'public')
+  : __dirname;
+app.use(express.static(publicDir));
 
 // Middleware de autenticação
 function autenticar(req, res, next) {
@@ -115,9 +120,9 @@ app.delete('/api/tarefas/:id', autenticar, (req, res) => {
   res.json({ ok: true });
 });
 
-// Rota fallback → retorna o index.html
+// Rota fallback → retorna o index.html (funciona na raiz ou em public/)
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
