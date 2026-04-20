@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestor de Tarefas — Escritório Jurídico</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --azul: #1a3a5c;
+      --azul-medio: #2d5f8a;
+      --azul-claro: #e8f0f7;
+      --dourado: #c9a84c;
+      --branco: #ffffff;
+      --cinza: #f4f6f9;
+      --borda: #d1dbe8;
+      --texto: #2c3e50;
+      --verde: #27ae60;
+      --laranja: #e67e22;
+      --vermelho: #e74c3c;
+      --roxo: #8e44ad;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--cinza);
+      color: var(--texto);
+      min-height: 100vh;
+    }
+
+    /* ── TELA DE LOGIN ── */
+    #tela-login {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(135deg, var(--azul) 0%, var(--azul-medio) 100%);
+    }
+
+    .card-login {
+      background: var(--branco);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .logo-escritorio {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .logo-escritorio .icone {
+      width: 64px;
+      height: 64px;
+      background: var(--azul);
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 12px;
+    }
+
+    .logo-escritorio .icone svg { fill: var(--dourado); }
+
+    .logo-escritorio h1 {
+      color: var(--azul);
+      font-size: 1.4rem;
+      font-weight: 700;
+    }
+
+    .logo-escritorio p { color: #666; font-size: .85rem; margin-top: 4px; }
+
+    .abas-login {
+      display: flex;
+      border-bottom: 2px solid var(--borda);
+      margin-bottom: 24px;
+    }
+
+    .aba {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      color: #888;
+      transition: all .2s;
+    }
+
+    .aba.ativa {
+      color: var(--azul);
+      border-bottom: 2px solid var(--azul);
+      margin-bottom: -2px;
+    }
+
+    label { display: block; font-size: .85rem; font-weight: 600; color: #555; margin-bottom: 6px; }
+
+    input[type=text], input[type=email], input[type=password], input[type=date], textarea, select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--borda);
+      border-radius: 8px;
+      font-size: .95rem;
+      color: var(--texto);
+      background: var(--branco);
+      transition: border .2s;
+      font-family: inherit;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--azul-medio);
+      box-shadow: 0 0 0 3px rgba(45,95,138,.12);
+    }
+
+    .campo { margin-bottom: 16px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+
+    .btn-primario { background: var(--azul); color: var(--branco); }
+    .btn-primario:hover { background: var(--azul-medio); }
+    .btn-bloco { width: 100%; justify-content: center; padding: 12px; }
+    .btn-verde { background: var(--verde); color: var(--branco); }
+    .btn-verde:hover { opacity: .85; }
+    .btn-vermelho { background: var(--vermelho); color: var(--branco); }
+    .btn-vermelho:hover { opacity: .85; }
+    .btn-cinza { background: #e0e0e0; color: #444; }
+    .btn-cinza:hover { background: #ccc; }
+
+    .msg-erro { color: var(--vermelho); font-size: .85rem; margin-top: 8px; text-align: center; }
+    .msg-ok   { color: var(--verde);    font-size: .85rem; margin-top: 8px; text-align: center; }
+
+    /* ── HEADER ── */
+    #app { display: none; flex-direction: column; min-height: 100vh; }
+
+    header {
+      background: var(--azul);
+      color: var(--branco);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-esq { display: flex; align-items: center; gap: 12px; }
+    .header-esq svg { fill: var(--dourado); }
+    .header-esq h2 { font-size: 1.1rem; font-weight: 700; }
+    .header-esq span { font-size: .75rem; opacity: .7; }
+
+    .header-dir { display: flex; align-items: center; gap: 12px; }
+    .usuario-badge {
+      background: rgba(255,255,255,.15);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: .85rem;
+    }
+
+    .btn-sair {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,.4);
+      color: var(--branco);
+      padding: 6px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      transition: all .2s;
+    }
+    .btn-sair:hover { background: rgba(255,255,255,.1); }
+
+    /* ── CONTEÚDO PRINCIPAL ── */
+    main { flex: 1; padding: 28px 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+
+    .barra-acoes {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .filtros { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .filtro-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--borda);
+      background: var(--branco);
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 600;
+      transition: all .2s;
+      color: #555;
+    }
+    .filtro-btn.ativo { background: var(--azul); color: var(--branco); border-color: var(--azul); }
+
+    /* ── TABELA ── */
+    .tabela-wrapper {
+      background: var(--branco);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+      overflow: auto;
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 900px; }
+
+    thead { background: var(--azul); }
+    thead th {
+      color: var(--branco);
+      padding: 14px 16px;
+      text-align: left;
+      font-size: .82rem;
+      font-weight: 600;
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
+
+    tbody tr { border-bottom: 1px solid var(--borda); transition: background .15s; }
+    tbody tr:hover { background: var(--azul-claro); }
+    tbody tr:last-child { border-bottom: none; }
+
+    td {
+      padding: 12px 16px;
+      font-size: .88rem;
+      vertical-align: top;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: .75rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .status-pendente    { background: #fff3cd; color: #856404; }
+    .status-andamento   { background: #cce5ff; color: #004085; }
+    .status-concluido   { background: #d4edda; color: #155724; }
+    .status-aguardando  { background: #f8d7da; color: #721c24; }
+
+    .acoes-linha { display: flex; gap: 6px; }
+
+    .btn-mini {
+      padding: 5px 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: .78rem;
+      font-weight: 600;
+      transition: opacity .2s;
+    }
+    .btn-mini:hover { opacity: .8; }
+    .btn-editar    { background: #e3ecf7; color: var(--azul); }
+    .btn-excluir   { background: #fdecea; color: var(--vermelho); }
+
+    .vazio {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .vazio svg { opacity: .3; margin-bottom: 12px; }
+    .vazio p { font-size: 1rem; }
+
+    /* ── MODAL ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .overlay.aberto { display: flex; }
+
+    .modal {
+      background: var(--branco);
+      border-radius: 16px;
+      padding: 32px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 80px rgba(0,0,0,.3);
+    }
+
+    .modal-titulo {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--azul);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-botoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    textarea { resize: vertical; min-height: 70px; }
+
+    .contador {
+      background: var(--azul);
+      color: var(--branco);
+      font-size: .8rem;
+      font-weight: 700;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-left: 8px;
+    }
+
+    .linha-criado { font-size: .75rem; color: #999; margin-top: 4px; }
+
+    @media (max-width: 600px) {
+      main { padding: 16px 12px; }
+      header { padding: 0 14px; }
+      .header-esq h2 { font-size: .95rem; }
+      .card-login { padding: 32px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════ TELA DE LOGIN ══════════════ -->
+<div id="tela-login">
+  <div class="card-login">
+    <div class="logo-escritorio">
+      <div class="icone">
+        <svg width="32" height="32" viewBox="0 0 24 24">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12V11c0 4.52-3.02 8.79-7 10.02C8.02 19.79 5 15.52 5 11V6.3l7-3.12z"/>
+        </svg>
+      </div>
+      <h1>Gestor Jurídico</h1>
+      <p>Controle de tarefas do escritório</p>
+    </div>
+
+    <div class="abas-login">
+      <div class="aba ativa" id="aba-entrar" onclick="trocarAba('entrar')">Entrar</div>
+      <div class="aba" id="aba-cadastro" onclick="trocarAba('cadastro')">Criar conta</div>
+    </div>
+
+    <!-- Formulário Login -->
+    <div id="form-entrar">
+      <div class="campo">
+        <label>E-mail</label>
+        <input type="email" id="login-email" placeholder="seu@email.com" />
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="login-senha" placeholder="••••••••" />
+      </div>
+      <div id="login-msg" class="msg-erro"></div>
+      <button class="btn btn-primario btn-bloco" style="margin-top:8px" onclick="entrar()">Entrar</button>
+    </div>
+
+    <!-- Formulário Cadastro -->
+    <div id="form-cadastro" style="display:none">
+      <div class="campo">
+        <label>Nome completo</label>
+        <input type="text" id="cad-nome" placeholder="Dr. João Silva" />
+      </div>
+      <div class="campo">
+        <label>E-mail</label>
+        <input type="email" id="cad-email" placeholder="seu@email.com" />
+      </div>
+      <div class="campo">
+        <label>Senha</label>
+        <input type="password" id="cad-senha" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <div id="cad-msg"></div>
+      <button class="btn btn-primario btn-bloco" style="margin-top:8px" onclick="cadastrar()">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP PRINCIPAL ══════════════ -->
+<div id="app">
+  <header>
+    <div class="header-esq">
+      <svg width="28" height="28" viewBox="0 0 24 24">
+        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+      </svg>
+      <div>
+        <h2>Gestor Jurídico</h2>
+        <span>Controle de tarefas</span>
+      </div>
+    </div>
+    <div class="header-dir">
+      <span class="usuario-badge" id="nome-usuario"></span>
+      <button class="btn-sair" onclick="sair()">Sair</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="barra-acoes">
+      <div style="display:flex;align-items:center;gap:8px">
+        <h3 style="font-size:1.05rem;color:var(--azul)">Tarefas</h3>
+        <span class="contador" id="total-tarefas">0</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <div class="filtros">
+          <button class="filtro-btn ativo" onclick="filtrar('todos',this)">Todas</button>
+          <button class="filtro-btn" onclick="filtrar('pendente',this)">🕐 Pendente</button>
+          <button class="filtro-btn" onclick="filtrar('andamento',this)">⚡ Em andamento</button>
+          <button class="filtro-btn" onclick="filtrar('aguardando',this)">⏳ Aguardando</button>
+          <button class="filtro-btn" onclick="filtrar('concluido',this)">✅ Concluído</button>
+        </div>
+        <button class="btn btn-verde" onclick="abrirModal()">
+          <svg width="16" height="16" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+          Nova tarefa
+        </button>
+      </div>
+    </div>
+
+    <div class="tabela-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Tarefa</th>
+            <th>Responsável</th>
+            <th>Observações</th>
+            <th>Devolutiva</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="corpo-tabela">
+          <!-- preenchido via JS -->
+        </tbody>
+      </table>
+      <div class="vazio" id="estado-vazio" style="display:none">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="#ccc"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        <p>Nenhuma tarefa encontrada</p>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ══════════════ MODAL NOVA/EDITAR TAREFA ══════════════ -->
+<div class="overlay" id="overlay" onclick="fecharModalFora(event)">
+  <div class="modal">
+    <div class="modal-titulo">
+      <svg width="20" height="20" fill="var(--azul)" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+      <span id="modal-titulo-texto">Nova Tarefa</span>
+    </div>
+
+    <input type="hidden" id="tarefa-id" />
+
+    <div class="campo">
+      <label>Data</label>
+      <input type="date" id="campo-data" />
+    </div>
+    <div class="campo">
+      <label>Tarefa *</label>
+      <input type="text" id="campo-tarefa" placeholder="Descreva a tarefa..." />
+    </div>
+    <div class="campo">
+      <label>Responsável</label>
+      <input type="text" id="campo-responsavel" placeholder="Nome do advogado responsável" />
+    </div>
+    <div class="campo">
+      <label>Observações</label>
+      <textarea id="campo-obs" placeholder="Observações adicionais..."></textarea>
+    </div>
+    <div class="campo">
+      <label>Devolutiva</label>
+      <textarea id="campo-devolutiva" placeholder="Retorno / resultado da tarefa..."></textarea>
+    </div>
+    <div class="campo">
+      <label>Status</label>
+      <select id="campo-status">
+        <option value="pendente">🕐 Pendente</option>
+        <option value="andamento">⚡ Em andamento</option>
+        <option value="aguardando">⏳ Aguardando</option>
+        <option value="concluido">✅ Concluído</option>
+      </select>
+    </div>
+
+    <div class="modal-botoes">
+      <button class="btn btn-cinza" onclick="fecharModal()">Cancelar</button>
+      <button class="btn btn-primario" onclick="salvarTarefa()">Salvar tarefa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = '';
+  let token = localStorage.getItem('jt_token');
+  let nomeUsuario = localStorage.getItem('jt_nome');
+  let tarefasTodas = [];
+  let filtroAtual = 'todos';
+
+  // ── INICIALIZAÇÃO ──
+  if (token) mostrarApp();
+
+  // ── LOGIN / CADASTRO ──
+  function trocarAba(aba) {
+    document.getElementById('form-entrar').style.display  = aba === 'entrar'  ? 'block' : 'none';
+    document.getElementById('form-cadastro').style.display = aba === 'cadastro' ? 'block' : 'none';
+    document.getElementById('aba-entrar').classList.toggle('ativa', aba === 'entrar');
+    document.getElementById('aba-cadastro').classList.toggle('ativa', aba === 'cadastro');
+  }
+
+  async function entrar() {
+    const email = document.getElementById('login-email').value;
+    const senha  = document.getElementById('login-senha').value;
+    const msg    = document.getElementById('login-msg');
+    msg.textContent = '';
+    try {
+      const r = await fetch('/api/login', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email,senha}) });
+      const d = await r.json();
+      if (!r.ok) { msg.textContent = d.erro; return; }
+      token = d.token; nomeUsuario = d.nome;
+      localStorage.setItem('jt_token', token);
+      localStorage.setItem('jt_nome',  nomeUsuario);
+      mostrarApp();
+    } catch { msg.textContent = 'Erro de conexão.'; }
+  }
+
+  async function cadastrar() {
+    const nome  = document.getElementById('cad-nome').value;
+    const email = document.getElementById('cad-email').value;
+    const senha  = document.getElementById('cad-senha').value;
+    const msg    = document.getElementById('cad-msg');
+    msg.className = 'msg-erro'; msg.textContent = '';
+    try {
+      const r = await fetch('/api/cadastro', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({nome,email,senha}) });
+      const d = await r.json();
+      if (!r.ok) { msg.textContent = d.erro; return; }
+      msg.className = 'msg-ok'; msg.textContent = 'Conta criada! Faça login.';
+      setTimeout(() => trocarAba('entrar'), 1200);
+    } catch { msg.textContent = 'Erro de conexão.'; }
+  }
+
+  // ── APP ──
+  function mostrarApp() {
+    document.getElementById('tela-login').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    document.getElementById('nome-usuario').textContent = '👤 ' + nomeUsuario;
+    carregarTarefas();
+  }
+
+  function sair() {
+    localStorage.removeItem('jt_token');
+    localStorage.removeItem('jt_nome');
+    token = null;
+    document.getElementById('tela-login').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+
+  // ── TAREFAS ──
+  async function carregarTarefas() {
+    const r = await fetch('/api/tarefas', { headers: { Authorization: 'Bearer ' + token } });
+    if (r.status === 401) { sair(); return; }
+    tarefasTodas = await r.json();
+    renderizar();
+  }
+
+  function filtrar(status, btn) {
+    filtroAtual = status;
+    document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    renderizar();
+  }
+
+  function renderizar() {
+    const lista = filtroAtual === 'todos' ? tarefasTodas : tarefasTodas.filter(t => t.status === filtroAtual);
+    const tbody = document.getElementById('corpo-tabela');
+    const vazio = document.getElementById('estado-vazio');
+    document.getElementById('total-tarefas').textContent = lista.length;
+
+    if (lista.length === 0) { tbody.innerHTML = ''; vazio.style.display = 'block'; return; }
+    vazio.style.display = 'none';
+
+    const labelStatus = { pendente:'🕐 Pendente', andamento:'⚡ Em andamento', aguardando:'⏳ Aguardando', concluido:'✅ Concluído' };
+
+    tbody.innerHTML = lista.map(t => `
+      <tr>
+        <td style="white-space:nowrap">${formatarData(t.data_tarefa)}</td>
+        <td>
+          <strong>${esc(t.tarefa)}</strong>
+          <div class="linha-criado">por ${esc(t.criado_por || '—')}</div>
+        </td>
+        <td>${esc(t.responsavel) || '<span style="color:#bbb">—</span>'}</td>
+        <td style="max-width:180px">${esc(t.obs) || '<span style="color:#bbb">—</span>'}</td>
+        <td style="max-width:180px">${esc(t.devolutiva) || '<span style="color:#bbb">—</span>'}</td>
+        <td><span class="badge-status status-${t.status}">${labelStatus[t.status] || t.status}</span></td>
+        <td>
+          <div class="acoes-linha">
+            <button class="btn-mini btn-editar" onclick="editarTarefa(${t.id})">✏️ Editar</button>
+            <button class="btn-mini btn-excluir" onclick="excluirTarefa(${t.id})">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function esc(s) {
+    if (!s) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  function formatarData(d) {
+    if (!d) return '—';
+    const [a,m,dia] = d.split('-');
+    return `${dia}/${m}/${a}`;
+  }
+
+  // ── MODAL ──
+  function abrirModal(tarefa) {
+    document.getElementById('modal-titulo-texto').textContent = tarefa ? 'Editar Tarefa' : 'Nova Tarefa';
+    document.getElementById('tarefa-id').value       = tarefa?.id || '';
+    document.getElementById('campo-data').value       = tarefa?.data_tarefa || '';
+    document.getElementById('campo-tarefa').value     = tarefa?.tarefa || '';
+    document.getElementById('campo-responsavel').value = tarefa?.responsavel || '';
+    document.getElementById('campo-obs').value         = tarefa?.obs || '';
+    document.getElementById('campo-devolutiva').value  = tarefa?.devolutiva || '';
+    document.getElementById('campo-status').value      = tarefa?.status || 'pendente';
+    document.getElementById('overlay').classList.add('aberto');
+  }
+
+  function fecharModal() { document.getElementById('overlay').classList.remove('aberto'); }
+  function fecharModalFora(e) { if (e.target === document.getElementById('overlay')) fecharModal(); }
+
+  function editarTarefa(id) {
+    const t = tarefasTodas.find(x => x.id === id);
+    if (t) abrirModal(t);
+  }
+
+  async function salvarTarefa() {
+    const id       = document.getElementById('tarefa-id').value;
+    const payload  = {
+      data_tarefa:  document.getElementById('campo-data').value,
+      tarefa:       document.getElementById('campo-tarefa').value,
+      responsavel:  document.getElementById('campo-responsavel').value,
+      obs:          document.getElementById('campo-obs').value,
+      devolutiva:   document.getElementById('campo-devolutiva').value,
+      status:       document.getElementById('campo-status').value,
+    };
+    if (!payload.tarefa.trim()) { alert('O campo "Tarefa" é obrigatório.'); return; }
+    const url    = id ? `/api/tarefas/${id}` : '/api/tarefas';
+    const method = id ? 'PUT' : 'POST';
+    const r = await fetch(url, { method, headers:{ 'Content-Type':'application/json', Authorization:'Bearer '+token }, body:JSON.stringify(payload) });
+    if (!r.ok) { alert('Erro ao salvar tarefa.'); return; }
+    fecharModal();
+    carregarTarefas();
+  }
+
+  async function excluirTarefa(id) {
+    if (!confirm('Tem certeza que deseja excluir esta tarefa?')) return;
+    await fetch(`/api/tarefas/${id}`, { method:'DELETE', headers:{ Authorization:'Bearer '+token } });
+    carregarTarefas();
+  }
+
+  // Atualiza a cada 30 segundos (para ver alterações de outros advogados)
+  setInterval(() => { if (token) carregarTarefas(); }, 30000);
+
+  // Enter nos campos de login
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const el = document.getElementById('tela-login');
+      if (el.style.display !== 'none') entrar();
+    }
+  });
+</script>
+</body>
+</html>
