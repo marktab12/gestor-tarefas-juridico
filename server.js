@@ -10,13 +10,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'escritorio-juridico-secret-2024';
 
-// Garante que a pasta de dados existe (para Render com disco persistente)
 const dataDir = process.env.DATA_DIR || './data';
 if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
 const db = new Database(path.join(dataDir, 'tarefas.db'));
 
-// Criação das tabelas
 db.exec(`
   CREATE TABLE IF NOT EXISTS usuarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +28,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     data_tarefa TEXT,
     tarefa TEXT NOT NULL,
+    prazo TEXT DEFAULT 'sem prazo',
     responsavel TEXT,
     obs TEXT,
     devolutiva TEXT,
@@ -40,16 +39,16 @@ db.exec(`
   );
 `);
 
+try { db.exec("ALTER TABLE tarefas ADD COLUMN prazo TEXT DEFAULT 'sem prazo'"); } catch {}
+
 app.use(cors());
 app.use(express.json());
 
-// Serve arquivos estáticos da pasta public/ se existir, senão da raiz
 const publicDir = fs.existsSync(path.join(__dirname, 'public'))
   ? path.join(__dirname, 'public')
   : __dirname;
 app.use(express.static(publicDir));
 
-// Middleware de autenticação
 function autenticar(req, res, next) {
   const token = req.headers['authorization']?.split(' ')[1];
   if (!token) return res.status(401).json({ erro: 'Não autorizado' });
@@ -61,14 +60,12 @@ function autenticar(req, res, next) {
   }
 }
 
-// ── ROTAS DE USUÁRIO ──────────────────────────────────────────
 app.post('/api/cadastro', async (req, res) => {
   const { nome, email, senha } = req.body;
   if (!nome || !email || !senha) return res.status(400).json({ erro: 'Preencha todos os campos' });
   try {
     const hash = await bcrypt.hash(senha, 10);
-    const stmt = db.prepare('INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)');
-    stmt.run(nome, email.toLowerCase(), hash);
+    db.prepare('INSERT INTO usuarios (nome, email, senha) VALUES (?, ?, ?)').run(nome, email.toLowerCase(), hash);
     res.json({ ok: true });
   } catch (e) {
     if (e.message.includes('UNIQUE')) return res.status(400).json({ erro: 'E-mail já cadastrado' });
@@ -86,33 +83,28 @@ app.post('/api/login', async (req, res) => {
   res.json({ token, nome: usuario.nome });
 });
 
-// ── ROTAS DE TAREFAS ──────────────────────────────────────────
 app.get('/api/tarefas', autenticar, (req, res) => {
   const tarefas = db.prepare('SELECT * FROM tarefas ORDER BY data_tarefa DESC, id DESC').all();
   res.json(tarefas);
 });
 
 app.post('/api/tarefas', autenticar, (req, res) => {
-  const { data_tarefa, tarefa, responsavel, obs, devolutiva, status } = req.body;
+  const { data_tarefa, tarefa, prazo, responsavel, obs, devolutiva, status } = req.body;
   if (!tarefa) return res.status(400).json({ erro: 'A tarefa não pode estar vazia' });
-  const stmt = db.prepare(`
-    INSERT INTO tarefas (data_tarefa, tarefa, responsavel, obs, devolutiva, status, criado_por)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const result = stmt.run(data_tarefa || '', tarefa, responsavel || '', obs || '', devolutiva || '', status || 'pendente', req.usuario.nome);
-  const nova = db.prepare('SELECT * FROM tarefas WHERE id = ?').get(result.lastInsertRowid);
-  res.json(nova);
+  const result = db.prepare(`
+    INSERT INTO tarefas (data_tarefa, tarefa, prazo, responsavel, obs, devolutiva, status, criado_por)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(data_tarefa||'', tarefa, prazo||'sem prazo', responsavel||'', obs||'', devolutiva||'', status||'pendente', req.usuario.nome);
+  res.json(db.prepare('SELECT * FROM tarefas WHERE id = ?').get(result.lastInsertRowid));
 });
 
 app.put('/api/tarefas/:id', autenticar, (req, res) => {
-  const { data_tarefa, tarefa, responsavel, obs, devolutiva, status } = req.body;
-  const stmt = db.prepare(`
-    UPDATE tarefas SET data_tarefa=?, tarefa=?, responsavel=?, obs=?, devolutiva=?, status=?, atualizado_em=CURRENT_TIMESTAMP
+  const { data_tarefa, tarefa, prazo, responsavel, obs, devolutiva, status } = req.body;
+  db.prepare(`
+    UPDATE tarefas SET data_tarefa=?, tarefa=?, prazo=?, responsavel=?, obs=?, devolutiva=?, status=?, atualizado_em=CURRENT_TIMESTAMP
     WHERE id=?
-  `);
-  stmt.run(data_tarefa || '', tarefa, responsavel || '', obs || '', devolutiva || '', status || 'pendente', req.params.id);
-  const atualizada = db.prepare('SELECT * FROM tarefas WHERE id = ?').get(req.params.id);
-  res.json(atualizada);
+  `).run(data_tarefa||'', tarefa, prazo||'sem prazo', responsavel||'', obs||'', devolutiva||'', status||'pendente', req.params.id);
+  res.json(db.prepare('SELECT * FROM tarefas WHERE id = ?').get(req.params.id));
 });
 
 app.delete('/api/tarefas/:id', autenticar, (req, res) => {
@@ -120,7 +112,6 @@ app.delete('/api/tarefas/:id', autenticar, (req, res) => {
   res.json({ ok: true });
 });
 
-// Rota fallback → retorna o index.html (funciona na raiz ou em public/)
 app.get('*', (req, res) => {
   res.sendFile(path.join(publicDir, 'index.html'));
 });
