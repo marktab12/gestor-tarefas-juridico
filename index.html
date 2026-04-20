@@ -83,11 +83,8 @@
     tbody tr:last-child { border-bottom: none; }
     td { padding: 11px 14px; font-size: .87rem; vertical-align: top; }
 
-    /* CORES RESPONSÁVEL */
-    tr.resp-tobias  { background: var(--tobias-bg); }
-    tr.resp-thais   { background: var(--thais-bg); }
-    tr.resp-gabriel { background: var(--gabriel-bg); }
-    tr.resp-bruno   { background: var(--bruno-bg); }
+    /* LINHA ATRASADA */
+    tr.atrasado { background: #ffeaea !important; }
 
     .badge-resp { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .78rem; font-weight: 700; }
     .resp-tobias  .badge-resp { background: #a8d5b5; color: var(--tobias-txt); }
@@ -378,11 +375,15 @@
     return d.toLocaleDateString('pt-BR');
   }
 
-  function dataFinalClass(dataTarefa, prazo) {
-    if (!dataTarefa || prazo==='sem prazo' || !prazo) return '';
+  function isAtrasado(dataTarefa, prazo) {
+    if (!dataTarefa || prazo==='sem prazo' || !prazo) return false;
     const d=new Date(dataTarefa+'T12:00:00');
     d.setDate(d.getDate()+parseInt(prazo));
-    return d < new Date() ? 'prazo-vencido' : 'prazo-ok';
+    return d < new Date();
+  }
+  function dataFinalClass(dataTarefa, prazo) {
+    if (!dataTarefa || prazo==='sem prazo' || !prazo) return '';
+    return isAtrasado(dataTarefa, prazo) ? 'prazo-vencido' : 'prazo-ok';
   }
 
   function respClass(resp) {
@@ -408,7 +409,7 @@
     else {
       vazio.style.display='none';
       tbody.innerHTML=lista.map(t=>`
-        <tr class="${respClass(t.responsavel)}">
+        <tr class="${isAtrasado(t.data_tarefa,t.prazo)?'atrasado':''}">
           <td style="white-space:nowrap">${fmt(t.data_tarefa)}</td>
           <td><strong>${esc(t.tarefa)}</strong><div style="font-size:.74rem;color:#888;margin-top:3px">por ${esc(t.criado_por||'—')}</div></td>
           <td style="text-align:center">${t.prazo==='sem prazo'||!t.prazo ? '<span style="color:#bbb">—</span>' : t.prazo+'d'}</td>
@@ -431,7 +432,7 @@
     else {
       vazioB.style.display='none';
       tbodyB.innerHTML=baixados.map(t=>`
-        <tr class="${respClass(t.responsavel)}">
+        <tr class="${isAtrasado(t.data_tarefa,t.prazo)?'atrasado':''}">
           <td style="white-space:nowrap">${fmt(t.data_tarefa)}</td>
           <td><strong>${esc(t.tarefa)}</strong><div style="font-size:.74rem;color:#888;margin-top:3px">por ${esc(t.criado_por||'—')}</div></td>
           <td style="text-align:center">${t.prazo==='sem prazo'||!t.prazo ? '<span style="color:#bbb">—</span>' : t.prazo+'d'}</td>
