@@ -87,10 +87,10 @@
     tr.atrasado { background: #ffeaea !important; }
 
     .badge-resp { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .78rem; font-weight: 700; }
-    .resp-tobias  .badge-resp { background: #a8d5b5; color: var(--tobias-txt); }
-    .resp-thais   .badge-resp { background: #f8b4d0; color: var(--thais-txt); }
-    .resp-gabriel .badge-resp { background: #93c5fd; color: var(--gabriel-txt); }
-    .resp-bruno   .badge-resp { background: #fca5a5; color: var(--bruno-txt); }
+    .badge-tobias  { background: #a8d5b5; color: #1a5c2e; }
+    .badge-thais   { background: #f8b4d0; color: #880e4f; }
+    .badge-gabriel { background: #93c5fd; color: #1e3a8a; }
+    .badge-bruno   { background: #fca5a5; color: #7f1d1d; }
 
     .badge-status { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: .75rem; font-weight: 700; white-space: nowrap; }
     .status-pendente  { background: #fff3cd; color: #856404; }
@@ -158,8 +158,7 @@
 <div id="app">
   <header>
     <div class="header-esq">
-      <svg width="28" height="28" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-      <div><h2>Gestor Jurídico</h2></div>
+      <img src="/logo.png" alt="BSA Sociedade de Advogados" style="height:44px;object-fit:contain;" />
     </div>
     <div class="header-dir">
       <span class="usuario-badge" id="nome-usuario"></span>
@@ -181,11 +180,21 @@
     <!-- PAINEL ATIVAS -->
     <div id="painel-ativas">
       <div class="barra-acoes">
-        <div class="filtros">
-          <button class="filtro-btn ativo" onclick="filtrar('todos',this)">Todas</button>
-          <button class="filtro-btn" onclick="filtrar('pendente',this)">🕐 Pendente</button>
-          <button class="filtro-btn" onclick="filtrar('suspender',this)">⏸ Suspender</button>
-          <button class="filtro-btn" onclick="filtrar('concluido',this)">✅ Concluído</button>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div class="filtros">
+            <button class="filtro-btn ativo" onclick="filtrar('todos',this)">Todas</button>
+            <button class="filtro-btn" onclick="filtrar('pendente',this)">🕐 Pendente</button>
+            <button class="filtro-btn" onclick="filtrar('suspender',this)">⏸ Suspender</button>
+            <button class="filtro-btn" onclick="filtrar('concluido',this)">✅ Concluído</button>
+          </div>
+          <div class="filtros">
+            <span style="font-size:.8rem;font-weight:600;color:#888;align-self:center;padding-right:4px">Responsável:</span>
+            <button class="filtro-btn filtro-resp ativo" onclick="filtrarResp('todos',this)">Todos</button>
+            <button class="filtro-btn filtro-resp" style="border-color:#a8d5b5" onclick="filtrarResp('Tobias',this)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#a8d5b5;margin-right:4px"></span>Tobias</button>
+            <button class="filtro-btn filtro-resp" style="border-color:#f8b4d0" onclick="filtrarResp('Thais',this)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#f8b4d0;margin-right:4px"></span>Thais</button>
+            <button class="filtro-btn filtro-resp" style="border-color:#93c5fd" onclick="filtrarResp('Gabriel',this)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#93c5fd;margin-right:4px"></span>Gabriel</button>
+            <button class="filtro-btn filtro-resp" style="border-color:#fca5a5" onclick="filtrarResp('Bruno',this)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#fca5a5;margin-right:4px"></span>Bruno</button>
+          </div>
         </div>
         <button class="btn btn-verde" onclick="abrirModal()">
           <svg width="16" height="16" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
@@ -298,6 +307,7 @@
   let nomeUsuario = localStorage.getItem('jt_nome');
   let tarefasTodas = [];
   let filtroAtual = 'todos';
+  let filtroResp = 'todos';
   let abaAtual = 'ativas';
 
   if (token) mostrarApp();
@@ -363,7 +373,14 @@
 
   function filtrar(status, btn) {
     filtroAtual=status;
-    document.querySelectorAll('.filtro-btn').forEach(b=>b.classList.remove('ativo'));
+    document.querySelectorAll('.filtro-btn:not(.filtro-resp)').forEach(b=>b.classList.remove('ativo'));
+    btn.classList.add('ativo');
+    renderizar();
+  }
+
+  function filtrarResp(resp, btn) {
+    filtroResp=resp;
+    document.querySelectorAll('.filtro-resp').forEach(b=>b.classList.remove('ativo'));
     btn.classList.add('ativo');
     renderizar();
   }
@@ -392,7 +409,7 @@
   }
 
   function renderizar() {
-    const ativas  = tarefasTodas.filter(t=>t.status!=='baixar');
+    const ativas  = tarefasTodas.filter(t=>t.status!=='baixar' && (filtroResp==='todos'||t.responsavel===filtroResp));
     const baixados= tarefasTodas.filter(t=>t.status==='baixar');
 
     document.getElementById('badge-ativas').textContent  = ativas.length;
@@ -414,7 +431,7 @@
           <td><strong>${esc(t.tarefa)}</strong><div style="font-size:.74rem;color:#888;margin-top:3px">por ${esc(t.criado_por||'—')}</div></td>
           <td style="text-align:center">${t.prazo==='sem prazo'||!t.prazo ? '<span style="color:#bbb">—</span>' : t.prazo+'d'}</td>
           <td class="${dataFinalClass(t.data_tarefa,t.prazo)}" style="white-space:nowrap">${calcDataFinal(t.data_tarefa,t.prazo)}</td>
-          <td>${t.responsavel ? `<span class="badge-resp">${esc(t.responsavel)}</span>` : '<span style="color:#bbb">—</span>'}</td>
+          <td>${t.responsavel ? `<span class="badge-resp badge-${t.responsavel?t.responsavel.toLowerCase():''}">${esc(t.responsavel)}</span>` : '<span style="color:#bbb">—</span>'}</td>
           <td style="max-width:160px">${esc(t.obs)||'<span style="color:#bbb">—</span>'}</td>
           <td style="max-width:160px">${esc(t.devolutiva)||'<span style="color:#bbb">—</span>'}</td>
           <td><span class="badge-status status-${t.status}">${labelStatus[t.status]||t.status}</span></td>
@@ -437,7 +454,7 @@
           <td><strong>${esc(t.tarefa)}</strong><div style="font-size:.74rem;color:#888;margin-top:3px">por ${esc(t.criado_por||'—')}</div></td>
           <td style="text-align:center">${t.prazo==='sem prazo'||!t.prazo ? '<span style="color:#bbb">—</span>' : t.prazo+'d'}</td>
           <td style="white-space:nowrap">${calcDataFinal(t.data_tarefa,t.prazo)}</td>
-          <td>${t.responsavel ? `<span class="badge-resp">${esc(t.responsavel)}</span>` : '<span style="color:#bbb">—</span>'}</td>
+          <td>${t.responsavel ? `<span class="badge-resp badge-${t.responsavel?t.responsavel.toLowerCase():''}">${esc(t.responsavel)}</span>` : '<span style="color:#bbb">—</span>'}</td>
           <td style="max-width:160px">${esc(t.obs)||'<span style="color:#bbb">—</span>'}</td>
           <td style="max-width:160px">${esc(t.devolutiva)||'<span style="color:#bbb">—</span>'}</td>
           <td><div class="acoes-linha">
